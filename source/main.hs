@@ -19,3 +19,4 @@ main = do
     
     putStrLn "=========================="
     putStrLn "Program Complete"
+    putStrLn "=========================="
