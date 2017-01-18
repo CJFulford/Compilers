@@ -62,16 +62,42 @@
     The two sorts of comment interact!  One-line comments should take precedence over the multi-line comments.  Thus, the eventual behavior should be equivalent to first stripping out the one-line comments and then removing the (possibly nested) multi-line comments.
 -}
 
+import System.Environment   
+import Data.List 
+
 main :: IO ()
 main = do
-    putStrLn "Author:       Cody Fulford"
-    putStrLn "Student ID:   10108658"
-    putStrLn "Compilers Assignment 1"
-    putStrLn "=========================="
+    args <- getArgs
+    
+    -- State the test code that this execution is running since this code is run multiple times
+    putStrLn "=================================================="
+    putStr   "Running test program: "
+    print args
+    putStrLn "=================================================="
+    
+    -- all this code does is print the contents of the testing file
+    case args of 
+            [file] -> do
+                x <- readFile file
+                putStr x
+            _ -> putStrLn "Wrong number of arguments"
     
     
     
-    
-    
-    putStrLn "=========================="
+    putStrLn "\n=================================================="
     putStrLn "Program Complete"
+      
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
