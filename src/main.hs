@@ -62,8 +62,7 @@
     The two sorts of comment interact!  One-line comments should take precedence over the multi-line comments.  Thus, the eventual behavior should be equivalent to first stripping out the one-line comments and then removing the (possibly nested) multi-line comments.
 -}
 
-import System.Environment   
-import Data.List 
+import System.Environment
 
 main :: IO ()
 main = do
@@ -81,12 +80,12 @@ main = do
                 x <- readFile file
                 putStr x
             _ -> putStrLn "Wrong number of arguments"
-    
-    
-    
+
+            
+            
     putStrLn "\n=================================================="
     putStrLn "Program Complete"
-      
+
     
     
     
