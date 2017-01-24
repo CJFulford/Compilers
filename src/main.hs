@@ -62,6 +62,18 @@
     The two sorts of comment interact!  One-line comments should take precedence over the multi-line comments.  Thus, the eventual behavior should be equivalent to first stripping out the one-line comments and then removing the (possibly nested) multi-line comments.
 -}
 
+
+
+{-
+mapM_ vs mapM vs map
+
+map :: (a->b) -> [a] -> [b]     -- deals with normal shit
+mapM :: (a->mb) -> [a] -> m[b]  -- deals with monads
+mapM_ :: (a->mb) -> [a] -> m()  -- deals with IOs
+
+USE ALEX
+-}
+
 import System.Environment
 
 main :: IO ()
@@ -77,9 +89,11 @@ main = do
     -- all this code does is print the contents of the testing file
     case args of 
             [file] -> do
-                x <- readFile file
-                putStr x
+                fileIn <- readFile file
+                --putStr fileIn
             _ -> putStrLn "Wrong number of arguments"
+            
+            
 
             
             
