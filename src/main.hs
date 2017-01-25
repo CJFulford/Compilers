@@ -44,7 +44,7 @@ findCommentEnd' count (x:xs) = case x of
 
 -- checks to see if a string qualifies as an id                    
 isID :: [Char] -> Bool
-isID (x:_) = if (x `elem` (['a'..'z']++['A'..'Z'])) then True else False
+isID (x:_) = if (x `elem` (['a'..'z']++['A'..'Z']++"_")) then True else False
 
 -- checks to see if a string can be a digit
 isDigit :: [Char] -> Bool
@@ -59,12 +59,15 @@ isDigit (x:xs) =    if (x `elem` ['0'..'9'])
 -- look through the entire string. if the character is found,              
 findSymbols :: [Char] -> [String]
 findSymbols [] = []
-findSymbols (x:xs) =  if (x `elem` [';','+','-','*','\'','(',')'])
-                    then "":[x]:(findSymbols xs)
+findSymbols (x:xs) =  if (x `elem` [';','+','-','*', '/','\'','(',')'])
+                    then [x]:(findSymbols xs)
                     else merge x (findSymbols xs)    
+                    
 merge :: Char -> [String] -> [String]
 merge x [] = [[x]]
-merge x (y:ys) = [x:y]++ys 
+merge x (y:ys) = if (y `elem` [";","+","-","*","/","\'","(",")"])
+                then [x]:[y]++ys
+                else [x:y]++ys
 
 
 
