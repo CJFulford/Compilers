@@ -31,7 +31,7 @@ findNewLine (x:xs) = case x of
 -- found start of block comment. start helper function with initial count of 1, as we have 1 nestyed block            
 findCommentEnd :: [String] -> [String]
 findCommentEnd [] = []
-findCommentEnd (x:xs) = findCommentEnd' 1 xs
+findCommentEnd x = findCommentEnd' 1 x
 
 -- helper function. takes in number of nexted block comments and ignores everything untill all nested blocks are closed
 findCommentEnd' :: Int -> [String] -> [String]
@@ -58,10 +58,15 @@ findSemicolons :: String -> [String]
 findSemicolons x =  if (last x == ';')
                     then [(init x), [last x]]
                     else [x]
+                    
+findLineComment :: String -> String
+findLineComment [] = []
+findLineComment (x:xs) = if (x == '%') then [] else x:(findLineComment xs)            
 
 -- lexer function takes a string and returns a Token list.
 lexer :: String ->[Token]
-lexer str = lexer' (concat(map findSemicolons(concat(map words (lines str)))))
+lexer str = lexer' (concat(map findSemicolons(
+                        concat(map words (map findLineComment(lines str))))))
 
 lexer' :: [String] -> [Token]
 lexer' [] = []
