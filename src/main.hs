@@ -18,6 +18,7 @@ data Token =  IF    String
             | LPAR  String
             | RPAR  String
             | SEMICOLON String
+            | PRINT String
             | ERROR String
             deriving (Eq,Show)
             
@@ -52,20 +53,31 @@ isDigit (x:xs) =    if (x `elem` ['0'..'9'])
                         if (xs == [])
                         then True
                         else isDigit xs
-                    else False
-                    
-findSemicolons :: String -> [String]
-findSemicolons x =  if (last x == ';')
-                    then [(init x), [last x]]
-                    else [x]
-                    
+                    else False                  
+             
+
+-- look through the entire string. if the character is found,              
+findSymbols :: [Char] -> [String]
+findSymbols [] = []
+findSymbols (x:xs) =  if (x `elem` [';','+','-','*','\'','(',')'])
+                    then "":[x]:(findSymbols xs)
+                    else merge x (findSymbols xs)    
+merge :: Char -> [String] -> [String]
+merge x [] = [[x]]
+merge x (y:ys) = [x:y]++ys 
+
+
+
+
+-- look for a line comment symbol in the string. if found ignore it and everything after it                    
 findLineComment :: String -> String
 findLineComment [] = []
 findLineComment (x:xs) = if (x == '%') then [] else x:(findLineComment xs)            
 
+
 -- lexer function takes a string and returns a Token list.
 lexer :: String ->[Token]
-lexer str = lexer' (concat(map findSemicolons(
+lexer str = lexer' (concat(map findSymbols(
                         concat(map words (map findLineComment(lines str))))))
 
 lexer' :: [String] -> [Token]
@@ -80,6 +92,7 @@ lexer' (x:xs) = case x of
     "begin" -> (BEGIN x)    : lexer' xs
     "end"   -> (END x)      : lexer' xs
     "write" -> (WRITE x)    : lexer' xs
+    "print" -> (PRINT x)    : lexer' xs     -- added this since it is obviously a function
     "+"     -> (ADD x)      : lexer' xs
     "-"     -> (SUB x)      : lexer' xs
     "*"     -> (MUL x)      : lexer' xs
@@ -87,7 +100,7 @@ lexer' (x:xs) = case x of
     "("     -> (LPAR x)     : lexer' xs
     " )"    -> (RPAR x)     : lexer' xs
     ";"     -> (SEMICOLON x): lexer' xs
-    "%"     -> lexer' (findNewLine xs)
+    --"%"     -> lexer' (findNewLine xs)    -- removed since this is when splitting by shitespace
     "/*"    -> lexer' (findCommentEnd xs)
     isID    -> (ID x)       : lexer' xs
     isDigit -> (NUM x)      : lexer' xs
