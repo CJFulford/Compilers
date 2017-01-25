@@ -14,18 +14,8 @@ set v6=test9.m-
 set list= %v0% %v1% %v2% %v3% %v4% %v5% %v6%
 
 for %%i in (%list%) do (
-echo .
-echo .
 main ../tests/%%i
-echo ===================
-
+echo .
+echo .
 )
-
-echo .
-echo .
-echo ===================
-echo Testing Complete
-echo ===================
-
-
 pause
