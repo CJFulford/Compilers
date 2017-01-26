@@ -1,0 +1,18 @@
+/*
+    Author: Cody Fulford
+    Test for case handling, this should produce many ID's as i believe that functions (tokens) need to be case sensitive
+    and they will revert to an ID since they dont match the function
+*/
+
+BEGIN
+    /* 
+    HERE IS A BLOCK COMMENT
+    */
+    X:=5;
+    %LINE COMMMENT WITH BLOCK OPENING /*
+    /* 
+    BLOCK COMMENT, ONLY SECOND CLOSE SHOULD WORK DUE TO LINE COMMENT %*/
+    */
+    Y:=X*INPUT;
+    PRINT Y
+END

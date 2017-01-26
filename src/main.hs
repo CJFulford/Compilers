@@ -45,7 +45,7 @@ main = do
     args <- getArgs
     case length args == 0 of
         True  -> do 
-               putStrLn "INCORRECT NUMBER OF ARGUMENTS, THERE SHOULD ONLY BE 1 OPERATOR THAT IS THE PATH OF THE m- FILE TO RUN"
+               putStrLn "INCORRECT NUMBER OF ARGUMENTS, THERE SHOULD BE EXACTLY 1 OPERATOR WHICH IS THE PATH TO THE m- FILE TO RUN"
         False -> do
             let fname  = args !! 0 
             putStrLn fname

@@ -1,0 +1,9 @@
+/*
+    Author: Cody Fulford
+    Test for single line program
+    Test for unclosed block comment opening in line comment
+*/
+
+begin
+/*here is a block comment*/x:=5;a:=4;b:=3;print a;/*here is another block comment*/y:=a*x/b;%finally a line comment/*
+end
