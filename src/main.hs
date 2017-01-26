@@ -20,6 +20,7 @@ data Token =  IF    String
             | RPAR  String
             | SEMICOLON String
             | PRINT String
+            | EQUALS String
             | ERROR String
             deriving (Eq,Show)
             
@@ -45,7 +46,20 @@ findCommentEnd' count (x:xs) = case x of
 
 -- checks to see if a string qualifies as an id                    
 isID :: [Char] -> Bool
-isID (x:_) = if (x `elem` (['a'..'z']++['A'..'Z']++"_")) then True else False
+isID (x:xs) = if (x `elem` (['a'..'z']++['A'..'Z']++"_"))
+                then 
+                    if (xs == [])
+                    then True
+                    else isID' xs 
+                else False
+                
+isID' :: [Char] -> Bool 
+isID' (x:xs) = if (x `elem` (['a'..'z']++['A'..'Z']++"_")++['0'..'9'])
+                then 
+                    if (xs == [])
+                    then True
+                    else isID' xs 
+                else False           
 
 -- checks to see if a string can be a digit
 isNum :: [Char] -> Bool
@@ -54,7 +68,7 @@ isNum (x:xs) =    if (isDigit x)
                         if (xs == [])
                         then True
                         else isNum xs
-                    else False                  
+                    else False                    
              
 
 -- look through the entire string. if the character is found,              
@@ -96,29 +110,30 @@ lexer str = lexer' (concat(map findSymbols(
 lexer' :: [String] -> [Token]
 lexer' [] = []
 lexer' (x:xs)
-    | x == []      = []
-    | x == "if"    = (IF x)       : lexer' xs 
-    | x == "then"  = (THEN x)     : lexer' xs
-    | x == "while" = (WHILE x)    : lexer' xs
-    | x == "do"    = (DO x)       : lexer' xs
-    | x == "input" = (INPUT x)    : lexer' xs
-    | x == "else"  = (ELSE x)     : lexer' xs
-    | x == "begin" = (BEGIN x)    : lexer' xs
-    | x == "end"   = (END x)      : lexer' xs
-    | x == "write" = (WRITE x)    : lexer' xs
-    | x == "print" = (PRINT x)    : lexer' xs     -- added this since it is obviously a function
-    | x == "+"     = (ADD x)      : lexer' xs
-    | x == "-"     = (SUB x)      : lexer' xs
-    | x == "*"     = (MUL x)      : lexer' xs
-    | x == "/"     = (DIV x)      : lexer' xs
-    | x == "("     = (LPAR x)     : lexer' xs
-    | x == ")"     = (RPAR x)     : lexer' xs
-    | x == ";"     = (SEMICOLON x): lexer' xs
-    -- | x == "%"  = lexer' (findNewLine xs)    -- removed since this is when splitting by shitespace
-    | x == "/*"    = lexer' (findCommentEnd xs)
-    | isID x       = (ID x)       : lexer' xs
-    | isNum x      = (NUM (strToInt x))      : lexer' xs
-    | otherwise    = lexer' xs
+    | x == []       = []
+    | x == "if"     = (IF x)        : lexer' xs 
+    | x == "then"   = (THEN x)      : lexer' xs
+    | x == "while"  = (WHILE x)     : lexer' xs
+    | x == "do"     = (DO x)        : lexer' xs
+    | x == "input"  = (INPUT x)     : lexer' xs
+    | x == "else"   = (ELSE x)      : lexer' xs
+    | x == "begin"  = (BEGIN x)     : lexer' xs
+    | x == "end"    = (END x)       : lexer' xs
+    | x == "write"  = (WRITE x)     : lexer' xs
+    | x == "print"  = (PRINT (head xs))     : lexer' (tail xs)     -- added this since it is obviously a function
+    | x == ":="     = (EQUALS x)   : lexer' xs
+    | x == "+"      = (ADD x)       : lexer' xs
+    | x == "-"      = (SUB x)       : lexer' xs
+    | x == "*"      = (MUL x)       : lexer' xs
+    | x == "/"      = (DIV x)       : lexer' xs
+    | x == "("      = (LPAR x)      : lexer' xs
+    | x == ")"      = (RPAR x)      : lexer' xs
+    | x == ";"      = (SEMICOLON x) : lexer' xs
+    -- | x == "%"   = lexer' (findNewLine xs)    -- removed since this is when splitting by shitespace
+    | x == "/*"     = lexer' (findCommentEnd xs)
+    | isID x        = (ID x)        : lexer' xs
+    | isNum x       = (NUM (strToInt x))    : lexer' xs
+    | otherwise     = (ERROR (x++"------------------------------------------"))     : lexer' xs
 
 
 main = do 
