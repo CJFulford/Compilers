@@ -1,0 +1,15 @@
+/*
+    Author: Cody Fulford
+    Test for unclosed nestedblock comments
+*/
+
+begin
+  x := 1234;
+  print x;
+end
+
+/*
+/*
+/*
+*/
+

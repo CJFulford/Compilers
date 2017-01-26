@@ -1,0 +1,12 @@
+/*
+    Author: Cody Fulford
+    Test for unclosed single block comments
+*/
+
+begin
+  x := 1234;
+  print x;
+end
+
+/*
+this is the beinning of a block comments

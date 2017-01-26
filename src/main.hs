@@ -90,14 +90,14 @@ lexer' (x:xs)
     | x == "-"      = (SUB x)       : lexer' xs
     | x == "**"     = (POW x)       : lexer' xs -- added this since it is in the test code adn i am assuming that it is not an error
     | x == "*"      = (MUL x)       : lexer' xs
-    | x == "/*"     =                 lexer' $ cutBlockComment xs
+    | x == "/*"     =                 lexer' $ cutBlockComment xs -- line comments (%) have already been handled and are thus not in here
     | x == "/"      = (DIV x)       : lexer' xs
     | x == "("      = (LPAR x)      : lexer' xs
     | x == ")"      = (RPAR x)      : lexer' xs
     | x == ";"      = (SEMICOLON x) : lexer' xs
     | isID x        = (ID x)        : lexer' xs
     | isNum x       = (NUM $ strToInt x)    : lexer' xs
-    | otherwise     = (ERROR (x++" Invalid TOKEN"))     : lexer' xs
+    | otherwise     = (ERROR x)     : lexer' xs
     
     
 -- =================================================
@@ -113,13 +113,13 @@ cutLineComment (x:xs) = if (x == '%') then [] else x:(cutLineComment xs)
             
 -- found start of block comment. start helper function with initial count of 1, as we have 1 nested block            
 cutBlockComment :: [String] -> [String]
-cutBlockComment [] = []
+cutBlockComment [] = ["UNCLOSED BLOCK COMMENT"]
 cutBlockComment x = cutBlockComment' 1 x
 
 -- helper function. takes in number of nexted block comments and ignores everything untill all nested blocks are closed
 cutBlockComment' :: Int -> [String] -> [String]
-cutBlockComment' count [] = []
 cutBlockComment' 0 x = x -- no more nested blocks. return rest of provided string
+cutBlockComment' count [] = ["UNCLOSED BLOCK COMMENT"]
 cutBlockComment' count (x:xs) = case x of 
                     "*/" -> cutBlockComment' (count-1) xs   -- found a close. decrement count and recurse
                     "/*" -> cutBlockComment' (count+1) xs   -- found a new nested block, increase count and recurse
@@ -189,3 +189,4 @@ strToInt x = strToInt' x 0  -- need helper method to keep track of place in stri
 strToInt' :: String -> Int -> Int
 strToInt' [] _ = 0          -- no more to convert, return 0
 strToInt' x c = ((digitToInt (last x)) * (10^c)) + (strToInt' (init x) (c+1)) -- grab the last character in the string, convert it to a digit. to correctly add it to the result, multiply it by 10^count, which is where it was in the string, relative to the back. add all of these results together and the number is complete
+
