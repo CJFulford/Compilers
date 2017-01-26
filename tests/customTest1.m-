@@ -1,0 +1,9 @@
+/*
+    Author: Cody Fulford
+    Test for conversion of numbers
+*/
+
+begin
+  x := 1234;
+  print x;
+end

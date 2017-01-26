@@ -10,9 +10,8 @@ set v3=test4.m-
 set v4=test5.m-
 set v5=test6.m-
 set v6=test9.m-
-set v7=customTest1.m-
 
-set list= %v0% %v1% %v2% %v3% %v4% %v5% %v6% %v7%
+set list= %v0% %v1% %v2% %v3% %v4% %v5% %v6%
 
 for %%i in (%list%) do (
 main ../tests/%%i
