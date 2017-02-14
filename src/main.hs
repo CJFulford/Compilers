@@ -1,6 +1,6 @@
 {-
     Author: Cody Fulford
-    Purpose: Assignment 1 submission for CPSC 411 at the University of Calgary, W17
+    Purpose: Assignment 2 submission for CPSC 411 at the University of Calgary, W17
     Notes:
         majority of the code has been written by myself.
         Main, lexer, and lexer' funcations have been based on The same functions in "eng_lang.hs" by Prashant Kumar
