@@ -57,6 +57,7 @@ main = do
             
             
 -- recieves the input of the file as a single large string.
+-- recieves the input of the file as a single large string.
 -- splits the string into lines, removes any line comments
 -- splits the lines into words
 -- analysys the words for symbols to create more words
@@ -97,7 +98,8 @@ lexer' (x:xs)
     | x == ";"      = (SEMICOLON x) : lexer' xs
     | isID x        = (ID x)        : lexer' xs
     | isNum x       = (NUM $ strToInt x)    : lexer' xs
-    | otherwise     = (ERROR x)     : lexer' xs
+    | canSplit x    =                 lexer' ((splitUnknown x) ++ xs)
+    | otherwise     = [ERROR x]
     
     
 -- =================================================
@@ -132,14 +134,14 @@ cutBlockComment' count (x:xs) = case x of
 
 -- checks to see if a string qualifies as an id
 -- need secondary function since the first character has a reduced range of valid posibilities                   
-isID :: [Char] -> Bool
+isID :: String -> Bool
 isID (x:xs)
         | not (x `elem` (alphaRange++"_")) = False  -- first char is not alpha or _, not an ID
         | xs == [] && (x `elem` alphaRange) = True  -- id is  only 1 character and is alpha but not just _, valid ID
         | otherwise = isID' xs                      -- possible id longer than 1 char, move to isID' for large range check
                 
 -- checks for valid ID, excluding first char
-isID' :: [Char] -> Bool
+isID' :: String -> Bool
 isID' (x:xs) 
         | not (x `elem` (alphaRange++numRange)) = False -- possible ID has characters outside valid range
         | xs == [] = True                               -- no more chars to check, valid ID
@@ -174,7 +176,7 @@ merge x (y:ys)
 
 
 -- checks to see if a string can be a digit
-isNum :: [Char] -> Bool
+isNum :: String -> Bool
 isNum (x:xs)
         | not (isDigit x) = False   -- character is not a digit, cannot be converted to a number, fail
         | xs == [] = True           -- all characters checks, can be converted to number
@@ -189,4 +191,31 @@ strToInt x = strToInt' x 0  -- need helper method to keep track of place in stri
 strToInt' :: String -> Int -> Int
 strToInt' [] _ = 0          -- no more to convert, return 0
 strToInt' x c = ((digitToInt (last x)) * (10^c)) + (strToInt' (init x) (c+1)) -- grab the last character in the string, convert it to a digit. to correctly add it to the result, multiply it by 10^count, which is where it was in the string, relative to the back. add all of these results together and the number is complete
+
+-- =================================================
+-- SPLITING HANDLING 
+
+-- makes sure that the possible splitting string can be made into an id and a num by making sure that all characters are part of the valid set               
+canSplit :: String -> Bool
+canSplit [] = True
+canSplit (x:xs)
+        | not (x `elem` (alphaRange++numRange++"_")) = False  -- unknown token. error
+        | otherwise = canSplit xs
+
+splitUnknown :: String -> [String]
+splitUnknown [] = []
+splitUnknown (x:xs)
+                | not (isDigit x) = [[], x:xs]
+                | otherwise = [x:y] ++ ys
+                    where
+                        temp = splitUnknown xs
+                        y = head temp
+                        ys = tail temp
+
+
+
+
+
+
+
 

@@ -15,18 +15,3 @@ The custome tokens are:
     
 Since I suspect that i will need to implement the conversion in assignment 2, i have already implemented a string to int fucntion.
 That is also how i am able to store my NUM token as an int and not a string
-
-The only limitation that i have placed in the code is for the specific line in test1.m-:
-
-17x17x17x17;   % a number then an identifier
-
-apparently this should be a number and an identifyer.
-I have activly chosen not to implement this beacuse it is unclear where we stop. if i were to implement this, so i have
-    17 x17x17x17 ;
-    or
-    17 x 17 x 17 x 17 ;
-or any other combination?
-
-implementing that feature would result in unclear code for both myself as a developer of the compiler and the user as a developer m-
-
-
