@@ -1,0 +1,4 @@
+% test to check if the program fails if END is omitted, which it should
+
+begin
+    write asdfasdfasdadfasdfasdfa

@@ -1,0 +1,5 @@
+/*
+    This file needs to fail. since there is no begin, the program should never start
+*/
+
+end

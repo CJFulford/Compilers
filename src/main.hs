@@ -31,12 +31,11 @@ data Token =  IF    String
             | SUB   String
             | MUL   String
             | DIV   String
-            | POW   String  -- added this
             | LPAR  String
             | RPAR  String
             | SEMICOLON String
             | PRINT String  -- added this
-            | EQUALS String -- added this
+            | ASSIGN String -- added this
             | ERROR String  -- added this
             deriving (Eq,Show)
             
@@ -50,9 +49,20 @@ main = do
             let fname  = args !! 0 
             putStrLn fname
             conts <- readFile fname
+            
+            
             let tokens = lexer conts 
-            putStrLn "TOKENS:\n==============================================\n"
-            mapM_ (putStrLn.show) tokens
+            
+            --putStrLn "TOKENS:\n\n"
+            --mapM_ (putStrLn.show) tokens
+            
+            
+            let tree = parser tokens
+            
+            putStrLn "TREE:\n\n"
+            mapM_ (putStrLn.show) tree
+            
+            
             putStrLn "\n==============================================\nEND TEST"
             
             
@@ -76,20 +86,19 @@ lexer' :: [String] -> [Token]
 lexer' [] = []
 lexer' (x:xs)
     | x == []       = []
+    | x == "begin"  = (BEGIN x)     : lexer' xs
+    | x == "end"    = (END x)       : lexer' xs
     | x == "if"     = (IF x)        : lexer' xs 
     | x == "then"   = (THEN x)      : lexer' xs
     | x == "while"  = (WHILE x)     : lexer' xs
     | x == "do"     = (DO x)        : lexer' xs
-    | x == "input"  = (INPUT x)     : lexer' xs
+    | x == "read"  = (INPUT x)     : lexer' xs
     | x == "else"   = (ELSE x)      : lexer' xs
-    | x == "begin"  = (BEGIN x)     : lexer' xs
-    | x == "end"    = (END x)       : lexer' xs
     | x == "write"  = (WRITE x)     : lexer' xs
     | x == "print"  = (PRINT (head xs))     : lexer' (tail xs)     -- added this since it is obviously a function
-    | x == ":="     = (EQUALS x)    : lexer' xs
+    | x == ":="     = (ASSIGN x)    : lexer' xs
     | x == "+"      = (ADD x)       : lexer' xs
     | x == "-"      = (SUB x)       : lexer' xs
-    | x == "**"     = (POW x)       : lexer' xs -- added this since it is in the test code adn i am assuming that it is not an error
     | x == "*"      = (MUL x)       : lexer' xs
     | x == "/*"     =                 lexer' $ cutBlockComment xs -- line comments (%) have already been handled and are thus not in here
     | x == "/"      = (DIV x)       : lexer' xs
@@ -100,6 +109,117 @@ lexer' (x:xs)
     | isNum x       = (NUM $ strToInt x)    : lexer' xs
     | canSplit x    =                 lexer' ((splitUnknown x) ++ xs)
     | otherwise     = [ERROR x]
+     
+     
+     
+     
+-- begin the parsing process
+parser :: [Token] -> [Token]
+parser [] = []
+parser x = prog x
+
+-- start the parse program
+prog :: [Token] -> [Token]
+prog [] = []
+prog (x:[]) = [x]
+prog (x:y:xs) =
+    case x of
+        IF _    -> thenpart $ expr (y:xs)
+        WHILE _ -> dopart $ expr (y:xs)
+        INPUT _ -> case y of 
+                    ID _ -> xs
+                    otherwise -> (y:xs)
+        ID _    -> case y of 
+                    ASSIGN _ -> expr xs
+                    otherwise -> (y:xs)
+        WRITE _ -> expr (y:xs)
+        BEGIN _ -> endpart $ stmtlist (y:xs)
+        PRINT _ -> stmtlist (y:xs)
+        otherwise -> x:y:xs
+
+-- check for a then statement            
+thenpart :: [Token] -> [Token]
+thenpart [] = []            
+thenpart ((THEN _):xs) = elsepart $ prog xs
+thenpart x = x
+
+elsepart :: [Token] ->[Token]
+elsepart ((ELSE _):xs) = prog xs
+elsepart x = x
+
+dopart :: [Token] ->[Token]
+dopart ((DO _):xs) = prog xs
+dopart x = x
+
+endpart :: [Token] ->[Token]
+endpart [] = []
+endpart ((END _):xs) = xs
+endpart x = x 
+
+stmtlist :: [Token] -> [Token]
+stmtlist x = stmtlist' x
+
+stmtlist' :: [Token] -> [Token]
+stmtlist' (x:[]) = [x]
+stmtlist' (x:y:xs) =
+    case x of
+        IF _    -> stmtlist' $ semipart $ thenpart $ expr (y:xs)
+        WHILE _ -> stmtlist' $ semipart $ dopart $ expr (y:xs)
+        INPUT _ -> case y of 
+                    ID _ -> stmtlist' $ semipart xs
+                    otherwise -> (y:xs)
+        ID _    -> case y of 
+                    ASSIGN _ -> stmtlist' $ semipart $ expr xs
+                    otherwise -> (y:xs)
+        WRITE _ -> semipart $ expr (y:xs)
+        BEGIN _ -> stmtlist' $ semipart $ endpart $ stmtlist (y:xs)
+        PRINT _ -> stmtlist' $ semipart $ expr (y:xs)
+        otherwise -> x:y:xs
+    
+semipart :: [Token] -> [Token]
+semipart ((SEMICOLON _):xs) = xs
+semipart x = x
+
+expr :: [Token] -> [Token]
+expr x = expr' $ term x
+
+expr' :: [Token] -> [Token]
+expr' (x:xs) =
+    case x of 
+        ADD _ -> expr' $ term xs
+        SUB _ -> expr' $ term xs
+        otherwise -> x:xs
+        
+term :: [Token] -> [Token]
+term x = term' $ factor x
+
+term' :: [Token] -> [Token]
+term' (x:xs) =
+    case x of 
+        MUL _ -> term' $ factor xs
+        DIV _ -> term' $ factor xs
+        otherwise -> x:xs
+        
+factor :: [Token] -> [Token]
+factor (x:[]) = [x]
+factor (x:y:xs) =
+    case x of 
+        LPAR _ -> rpart $ expr (y:xs)
+        ID _ -> (y:xs)
+        NUM _ -> (y:xs)
+        SUB _ -> case y of 
+                    NUM _ -> xs
+                    otherwise -> (y:xs)
+        otherwise -> x:y:xs
+    
+rpart :: [Token] -> [Token]
+rpart ((RPAR _):xs) = xs
+rpart x = x    
+    
+    
+    
+    
+    
     
     
 -- =================================================
@@ -202,6 +322,7 @@ canSplit (x:xs)
         | not (x `elem` (alphaRange++numRange++"_")) = False  -- unknown token. error
         | otherwise = canSplit xs
 
+-- find the first case of a non number in the string then stop recursing and have the number be the first element of the list of strings and the remaining string be the second entry. the second entry remains to be checked if it is a valid ID
 splitUnknown :: String -> [String]
 splitUnknown [] = []
 splitUnknown (x:xs)

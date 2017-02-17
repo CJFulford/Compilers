@@ -1,0 +1,11 @@
+/*
+    check for a compilcated file that should parse correctly
+*/
+begin
+    while x do y := y + 1;
+    y := x + 1;
+    z := y * x;
+    read userIn;
+    x := x * userIn;
+    w := y * x / (z * y * x);        
+end

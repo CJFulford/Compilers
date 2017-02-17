@@ -1,0 +1,12 @@
+% checking priority of multiplication, division, addition, subtraction, and brackets
+begin 
+   x := 1;
+   y := 2;
+   z := 3;
+   
+   w := (x + y) / (x * z);
+   q := x * y / z;
+   h := x / (y + 2) * 457;
+   
+   write h;
+end

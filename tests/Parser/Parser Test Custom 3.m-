@@ -1,0 +1,9 @@
+% testing of if statements
+
+begin
+    read userIn;
+    x := userIn;
+    if x 
+    then y := x 
+    else z := x    
+end 
