@@ -110,9 +110,8 @@ data Term = Factor Term'
 data Term' = MUL Factor Term'
             | DIV Factor Term'
 data Factor = LPAR Expr
-            | ID
-            | NUM
-            | SUB NUM
+            | String
+            | int
             
             
 
