@@ -6,6 +6,54 @@
         Main, lexer, and lexer' funcations have been based on The same functions in "eng_lang.hs" by Prashant Kumar
 -}
 
+{-
+    Here is the grammar that i am using 
+    
+    prog -> IF expr thenpart
+            | WHILE expr dopart
+            | INPUT ID
+            | ID ASSIGN expr
+            | WRITE expr
+            | PRINT stmtlist                I added this since it was not contained in the original grammar and needed to be added
+            | BEGIN stmtlist endpart
+            
+    stmtlist' -> IF expr thenpart semipart stmtlist'
+                | WHILE empr dopart semipart stmtlist'
+                | INPUT ID semipart stmtlist'
+                | ID ASSIGN empr semipart stmtlist'
+                | WRITE expr semipart
+                | PRINT expr semipart'
+                | BEGIN stmtlist endpart semipart stmtlist'
+                | .
+                
+    expr -> term expr'
+    
+    expr' -> ADD term expr'
+            | SUB term expr'
+            | .
+            
+    term -> factor term'
+    
+    term' -> MUL factor term'
+            | DIV factor term'
+            | .
+            
+    factor -> LPAR expr rpart
+            | ID
+            | NUM
+            | SUB NUM
+            
+    thenpart    -> THEN prog elsepart
+    elsepart    -> ELSE prog
+    dopart      -> DO prog
+    endpart     -> END
+    stmtlist    -> stmtlist'
+    semipart    -> SEMICOLON
+    rpart       -> RPAR
+
+    
+-}
+
 import System.Environment
 import Data.Char
 
@@ -26,7 +74,7 @@ data Token =  IF    String
             | END   String 
             | WRITE String
             | ID    String
-            | NUM   Int     -- conversion to int does happen
+            | NUM   Int
             | ADD   String
             | SUB   String
             | MUL   String
@@ -38,6 +86,36 @@ data Token =  IF    String
             | ASSIGN String -- added this
             | ERROR String  -- added this
             deriving (Eq,Show)
+            
+-- Syntax Tree            
+data Prog = IF Expr Prog Prog
+            | WHILE Expr Prog
+            | INPUT ID
+            | ID ASSIGN Expr
+            | WRITE Expr
+            | PRINT Expr
+            | BEGIN Stmtlist
+data Stmtlist = Stmtlist'
+data Stmtlist' = IF Expr Prog Prog Stmtlist'
+            | WHILE Expr Prog Stmtlist'
+            | INPUT ID Stmtlist'
+            | ID ASSIGN Expr Stmtlist'
+            | WRITE Expr
+            | PRINT Expr
+            | BEGIN Stmtlist Stmtlist'
+data Expr = Term Expr'
+data Expr' = ADD Term Expr'
+            | SUB Term Expr'
+data Term = Factor Term'
+data Term' = MUL Factor Term'
+            | DIV Factor Term'
+data Factor = LPAR Expr
+            | ID
+            | NUM
+            | SUB NUM
+            
+            
+
             
             
 main = do 
@@ -60,7 +138,7 @@ main = do
             let tree = parser tokens
             
             putStrLn "TREE:\n\n"
-            mapM_ (putStrLn.show) tree
+            --mapM_ (putStrLn.show) tree
             
             
             putStrLn "\n==============================================\nEND TEST"
@@ -95,7 +173,7 @@ lexer' (x:xs)
     | x == "read"  = (INPUT x)     : lexer' xs
     | x == "else"   = (ELSE x)      : lexer' xs
     | x == "write"  = (WRITE x)     : lexer' xs
-    | x == "print"  = (PRINT (head xs))     : lexer' (tail xs)     -- added this since it is obviously a function
+    | x == "print"  = (PRINT (head xs))     : lexer' (tail xs)
     | x == ":="     = (ASSIGN x)    : lexer' xs
     | x == "+"      = (ADD x)       : lexer' xs
     | x == "-"      = (SUB x)       : lexer' xs
@@ -110,8 +188,8 @@ lexer' (x:xs)
     | canSplit x    =                 lexer' ((splitUnknown x) ++ xs)
     | otherwise     = [ERROR x]
      
-     
-     
+-- =================================================
+-- Parser
      
 -- begin the parsing process
 parser :: [Token] -> [Token]
@@ -133,8 +211,8 @@ prog (x:y:xs) =
                     ASSIGN _ -> expr xs
                     otherwise -> (y:xs)
         WRITE _ -> expr (y:xs)
+        PRINT _ -> expr (y:xs)
         BEGIN _ -> endpart $ stmtlist (y:xs)
-        PRINT _ -> stmtlist (y:xs)
         otherwise -> x:y:xs
 
 -- check for a then statement            
@@ -172,8 +250,8 @@ stmtlist' (x:y:xs) =
                     ASSIGN _ -> stmtlist' $ semipart $ expr xs
                     otherwise -> (y:xs)
         WRITE _ -> semipart $ expr (y:xs)
-        BEGIN _ -> stmtlist' $ semipart $ endpart $ stmtlist (y:xs)
         PRINT _ -> stmtlist' $ semipart $ expr (y:xs)
+        BEGIN _ -> stmtlist' $ semipart $ endpart $ stmtlist (y:xs)
         otherwise -> x:y:xs
     
 semipart :: [Token] -> [Token]
@@ -215,12 +293,6 @@ factor (x:y:xs) =
 rpart :: [Token] -> [Token]
 rpart ((RPAR _):xs) = xs
 rpart x = x    
-    
-    
-    
-    
-    
-    
     
 -- =================================================
 -- COMMENT HANDLING
