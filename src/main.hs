@@ -88,13 +88,13 @@ data Token =  IF    String
             deriving (Eq,Show)
             
 -- Syntax Tree            
-data Prog = IF Expr Prog Prog
-            | WHILE Expr Prog
-            | INPUT ID
-            | ID ASSIGN Expr
-            | WRITE Expr
-            | PRINT Expr
-            | BEGIN Stmtlist
+data Prog = If Expr Prog Prog
+            | While Expr Prog
+            | Input Id
+            | Id Assign Expr
+            | Write Expr
+            | Print Expr
+            | Begin Stmtlist
 data Stmtlist = Stmtlist'
 data Stmtlist' = IF Expr Prog Prog Stmtlist'
             | WHILE Expr Prog Stmtlist'
@@ -110,8 +110,9 @@ data Term = Factor Term'
 data Term' = MUL Factor Term'
             | DIV Factor Term'
 data Factor = LPAR Expr
-            | String
-            | int
+            | ID
+            | NUM
+            | SUB NUM
             
             
 
