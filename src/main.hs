@@ -17,13 +17,13 @@
             | PRINT stmtlist                I added this since it was not contained in the original grammar and needed to be added
             | BEGIN stmtlist endpart
             
-    stmtlist' -> IF expr thenpart semipart stmtlist'
-                | WHILE empr dopart semipart stmtlist'
-                | INPUT ID semipart stmtlist'
-                | ID ASSIGN empr semipart stmtlist'
+    stmtlist -> IF expr thenpart semipart stmtlist
+                | WHILE empr dopart semipart stmtlist
+                | INPUT ID semipart stmtlist
+                | ID ASSIGN empr semipart stmtlist
                 | WRITE expr semipart
-                | PRINT expr semipart'
-                | BEGIN stmtlist endpart semipart stmtlist'
+                | PRINT expr semipart
+                | BEGIN stmtlist endpart semipart stmtlist
                 | .
                 
     expr -> term expr'
@@ -47,13 +47,12 @@
     elsepart    -> ELSE prog
     dopart      -> DO prog
     endpart     -> END
-    stmtlist    -> stmtlist'
     semipart    -> SEMICOLON
     rpart       -> RPAR
 
     
 -}
-
+import Text.PrettyPrint.GenericPretty
 import System.Environment
 import Data.Char
 
@@ -64,58 +63,65 @@ operators = [';','+','-','*', '/','\'','(',')']
 doubleOperators = [":=", "**", "/*", "*/"]
 strOperators = [";","+","-","*", "/","\'","(",")", ":=", "**", "/*", "*/"]
 
-data Token =  IF    String
-            | THEN  String
-            | WHILE String
-            | DO    String
-            | INPUT String
-            | ELSE  String
-            | BEGIN String
-            | END   String 
-            | WRITE String
-            | ID    String
-            | NUM   Int
-            | ADD   String
-            | SUB   String
-            | MUL   String
-            | DIV   String
-            | LPAR  String
-            | RPAR  String
-            | SEMICOLON String
-            | PRINT String  -- added this
-            | ASSIGN String -- added this
-            | ERROR String  -- added this
+data Token =  T_IF    String
+            | T_THEN  String
+            | T_WHILE String
+            | T_DO    String
+            | T_INPUT String
+            | T_ELSE  String
+            | T_BEGIN String
+            | T_END   String 
+            | T_WRITE String
+            | T_ID    String
+            | T_NUM   Int
+            | T_ADD   String
+            | T_SUB   String
+            | T_MUL   String
+            | T_DIV   String
+            | T_LPAR  String
+            | T_RPAR  String
+            | T_SEMICOLON String
+            | T_PRINT String  -- added this
+            | T_ASSIGN String -- added this
+            | T_ERROR String  -- added this
             deriving (Eq,Show)
+          
             
--- Syntax Tree            
+-- Syntax Tree          
 data Prog = If Expr Prog Prog
             | While Expr Prog
-            | Input Id
-            | Id Assign Expr
+            | Input String
+            | Id String Expr
             | Write Expr
             | Print Expr
             | Begin Stmtlist
-data Stmtlist = Stmtlist'
-data Stmtlist' = IF Expr Prog Prog Stmtlist'
-            | WHILE Expr Prog Stmtlist'
-            | INPUT ID Stmtlist'
-            | ID ASSIGN Expr Stmtlist'
-            | WRITE Expr
-            | PRINT Expr
-            | BEGIN Stmtlist Stmtlist'
-data Expr = Term Expr'
-data Expr' = ADD Term Expr'
-            | SUB Term Expr'
-data Term = Factor Term'
-data Term' = MUL Factor Term'
-            | DIV Factor Term'
-data Factor = LPAR Expr
-            | ID
-            | NUM
-            | SUB NUM
+            deriving (Out, Generic)
+data Stmtlist = S_If Expr Prog Prog Stmtlist
+            | S_While Expr Prog Stmtlist
+            | S_Input String Stmtlist
+            | S_Id String Expr Stmtlist
+            | S_Write Expr
+            | S_Print Expr
+            | S_Begin Stmtlist Stmtlist
+            deriving (Out, Generic)
+data Expr = Expr Term Expr'
+            deriving (Out, Generic)
+data Expr' = Add Term Expr'
+            | Sub Term Expr'
+            deriving (Out, Generic)
+data Term = Term Factor Term'
+            deriving (Out, Generic)
+data Term' = Mul Factor Term'
+            | Div Factor Term'
+            deriving (Out, Generic)
+data Factor = Lpar Expr
+            | F_Id String
+            | Num Int
+            | Neg Int
+            deriving (Out, Generic)  
             
             
-
+--instance (Out a) => Out (Prog a)
             
             
 main = do 
@@ -131,13 +137,14 @@ main = do
             
             let tokens = lexer conts 
             
-            --putStrLn "TOKENS:\n\n"
-            --mapM_ (putStrLn.show) tokens
+            putStrLn "TOKENS:\n\n"
+            mapM_ (putStrLn.show) tokens
             
             
             let tree = parser tokens
             
-            putStrLn "TREE:\n\n"
+            putStrLn "\n======================\nTREE:\n\n"
+            pp tree
             --mapM_ (putStrLn.show) tree
             
             
@@ -164,33 +171,154 @@ lexer' :: [String] -> [Token]
 lexer' [] = []
 lexer' (x:xs)
     | x == []       = []
-    | x == "begin"  = (BEGIN x)     : lexer' xs
-    | x == "end"    = (END x)       : lexer' xs
-    | x == "if"     = (IF x)        : lexer' xs 
-    | x == "then"   = (THEN x)      : lexer' xs
-    | x == "while"  = (WHILE x)     : lexer' xs
-    | x == "do"     = (DO x)        : lexer' xs
-    | x == "read"  = (INPUT x)     : lexer' xs
-    | x == "else"   = (ELSE x)      : lexer' xs
-    | x == "write"  = (WRITE x)     : lexer' xs
-    | x == "print"  = (PRINT (head xs))     : lexer' (tail xs)
-    | x == ":="     = (ASSIGN x)    : lexer' xs
-    | x == "+"      = (ADD x)       : lexer' xs
-    | x == "-"      = (SUB x)       : lexer' xs
-    | x == "*"      = (MUL x)       : lexer' xs
+    | x == "begin"  = (T_BEGIN x)     : lexer' xs
+    | x == "end"    = (T_END x)       : lexer' xs
+    | x == "if"     = (T_IF x)        : lexer' xs 
+    | x == "then"   = (T_THEN x)      : lexer' xs
+    | x == "while"  = (T_WHILE x)     : lexer' xs
+    | x == "do"     = (T_DO x)        : lexer' xs
+    | x == "read"   = (T_INPUT x)     : lexer' xs
+    | x == "else"   = (T_ELSE x)      : lexer' xs
+    | x == "write"  = (T_WRITE x)     : lexer' xs
+    | x == "print"  = (T_PRINT (head xs))     : lexer' (tail xs)
+    | x == ":="     = (T_ASSIGN x)    : lexer' xs
+    | x == "+"      = (T_ADD x)       : lexer' xs
+    | x == "-"      = (T_SUB x)       : lexer' xs
+    | x == "*"      = (T_MUL x)       : lexer' xs
     | x == "/*"     =                 lexer' $ cutBlockComment xs -- line comments (%) have already been handled and are thus not in here
-    | x == "/"      = (DIV x)       : lexer' xs
-    | x == "("      = (LPAR x)      : lexer' xs
-    | x == ")"      = (RPAR x)      : lexer' xs
-    | x == ";"      = (SEMICOLON x) : lexer' xs
-    | isID x        = (ID x)        : lexer' xs
-    | isNum x       = (NUM $ strToInt x)    : lexer' xs
+    | x == "/"      = (T_DIV x)       : lexer' xs
+    | x == "("      = (T_LPAR x)      : lexer' xs
+    | x == ")"      = (T_RPAR x)      : lexer' xs
+    | x == ";"      = (T_SEMICOLON x) : lexer' xs
+    | isID x        = (T_ID x)        : lexer' xs
+    | isNum x       = (T_NUM $ strToInt x)    : lexer' xs
     | canSplit x    =                 lexer' ((splitUnknown x) ++ xs)
-    | otherwise     = [ERROR x]
+    | otherwise     = [T_ERROR x]
      
 -- =================================================
 -- Parser
      
+-- begin the parsing process
+parser :: [Token] -> Prog
+parser x = y where (y, _) = prog x
+
+
+
+-- start the parse program
+prog :: [Token] -> (Prog, [Token])
+prog ((T_IF _):xs) = (If e p1 p2, end) where 
+                        (e, r1) = expr xs
+                        (p1,r2) = thenpart r1
+                        (p2, end) = elsepart r2
+prog ((T_WHILE _):xs) = (While e p1, end) where 
+                        (e, r1) = expr xs
+                        (p1, end) = prog r1  
+prog ((T_INPUT _):(T_ID x):xs) = (Input x, xs)
+prog ((T_ID x):(T_ASSIGN _):xs) = (Id x e, end) where
+                            (e, end) = expr xs
+prog ((T_WRITE _):xs) = (Write e, end) where
+                            (e, end) = expr xs
+prog ((T_PRINT _):xs) = (Print e, end) where
+                            (e, end) = expr xs
+prog ((T_BEGIN _):xs) = (Begin s1, endpart end) where
+                            (s1, r1) = stmtlist xs
+                            (s2, end) = stmtlist r1
+
+
+
+stmtlist :: [Token] -> (Stmtlist, [Token])
+stmtlist ((T_IF _):xs) = (S_If e p1 p2 s, end) where
+                            (e, r1) = expr xs
+                            (p1, r2) = prog r1
+                            (p2, r3) = prog r2
+                            (s, end) = stmtlist $ semipart r3
+stmtlist ((T_WHILE _):xs) = (S_While e p s, end) where
+                            (e, r1) = expr xs
+                            (p, r2) = prog r1
+                            (s, end) = stmtlist $ semipart r2
+stmtlist ((T_INPUT _):(T_ID x):xs) = (S_Input x s, end) where
+                            (s, end) = stmtlist $ semipart xs
+stmtlist ((T_ID x):(T_ASSIGN _):xs) = (S_Id x e s, end) where
+                            (e, r1) = expr xs
+                            (s, end) = stmtlist  $ semipart r1
+stmtlist ((T_WRITE _):xs) = (S_Write e, semipart end) where
+                            (e, end) = expr xs
+stmtlist ((T_PRINT _):xs) = (S_Print e, semipart end) where
+                            (e, end) = expr xs
+stmtlist ((T_BEGIN _):xs) = (S_Begin s1 s2, end) where
+                            (s1, r1) = stmtlist xs
+                            (s2, end) = stmtlist $ semipart $ endpart r1
+stmtlist x = x                                       
+
+                          
+                        
+                          
+expr :: [Token] -> (Expr, [Token])                        
+expr x = (Expr t e, end) where
+                        (t, r1) = term x
+                        (e, end) = expr' r1
+
+expr' ::  [Token] -> (Expr', [Token])                      
+expr' ((T_ADD _):xs) = (Add t e, end) where
+                        (t, r1) = term xs
+                        (e, end) = expr' r1
+expr' ((T_SUB _):xs) = (Sub t e, end) where
+                        (t, r1) = term xs
+                        (e, end) = expr' r1      
+
+                        
+                        
+                        
+                        
+                        
+term :: [Token] -> (Term, [Token])
+term x = (Term f t, end) where
+                        (f, r1) = factor x
+                        (t, end) = term' r1
+                        
+term' :: [Token] -> (Term', [Token])
+term' ((T_MUL _):xs) = (Mul f t, end) where
+                                        (f, r1) = factor xs
+                                        (t, end) = term' r1
+term' ((T_DIV _):xs) = (Div f t, end) where
+                                        (f, r1) = factor xs
+                                        (t, end) = term' r1
+                                        
+                                        
+factor :: [Token] -> (Factor, [Token])
+factor ((T_LPAR _):xs) = (Lpar e, rpart end) where
+                            (e, end) = expr xs
+factor ((T_ID x):xs) = (F_Id x, xs)
+factor ((T_NUM x):xs) = (Num x, xs)
+factor ((T_SUB _):(T_NUM x):xs) = (Neg x, xs)
+
+thenpart :: [Token] -> (Prog, [Token])
+thenpart ((T_THEN _):xs) = (p, end) where
+                                (p, end) = prog xs
+
+elsepart :: [Token] -> (Prog, [Token])
+elsepart ((T_ELSE _):xs) = (p, end) where
+                                (p, end) = prog xs
+
+rpart :: [Token] -> [Token]
+rpart ((T_RPAR _):xs) = xs
+rpart x = x
+
+endpart :: [Token] -> [Token]
+endpart ((T_END _):xs) = xs
+endpart x = x
+
+semipart :: [Token] -> [Token]
+semipart ((T_SEMICOLON _):xs) = xs
+semipart x = x
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+{-
 -- begin the parsing process
 parser :: [Token] -> [Token]
 parser [] = []
@@ -293,6 +421,12 @@ factor (x:y:xs) =
 rpart :: [Token] -> [Token]
 rpart ((RPAR _):xs) = xs
 rpart x = x    
+-}
+
+
+
+
+                  
     
 -- =================================================
 -- COMMENT HANDLING
