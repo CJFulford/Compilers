@@ -4,14 +4,13 @@ To run this code, simply go into the src folder, open a command prompt and type 
 IF you run the code on windows, i have creaetd some batch files designed to speed the testing process
 
 
+This code will generate the AST of the provided code and show it in the commmand prompt
 
+The pretty parsing library that i have used is GenericPretty
 
-This program has implemented the tokens we were requested to implement, along with some custom tokens that i believe are appropriate.
-The custome tokens are:
-    **      representing a power function
-    PRINT   representing a print function
-    EQUALS  representing equals, this token is represented in the m- file by :=
-    ERROR   representing some error handling
-    
-Since I suspect that i will need to implement the conversion in assignment 2, i have already implemented a string to int fucntion.
-That is also how i am able to store my NUM token as an int and not a string
+Limitations:
+The limitations of this code are as follows:
+
+No support for error checking,
+No conversion to stack code,
+No saving the stack code to a file

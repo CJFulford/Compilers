@@ -87,7 +87,7 @@ data Token =  T_IF    String
             deriving (Eq,Show)
           
             
--- Syntax Tree          
+-- Syntax Tree, we need to derive generic and out in order to user the generic pretty print       
 data Prog = If Expr Prog Prog
             | While Expr Prog
             | Input String
@@ -103,16 +103,19 @@ data Stmtlist = S_If Expr Prog Prog Stmtlist
             | S_Write Expr
             | S_Print Expr
             | S_Begin Stmtlist Stmtlist
+            | Svoid
             deriving (Out, Generic)
 data Expr = Expr Term Expr'
             deriving (Out, Generic)
 data Expr' = Add Term Expr'
             | Sub Term Expr'
+            | Evoid
             deriving (Out, Generic)
 data Term = Term Factor Term'
             deriving (Out, Generic)
 data Term' = Mul Factor Term'
             | Div Factor Term'
+            | Tvoid
             deriving (Out, Generic)
 data Factor = Lpar Expr
             | F_Id String
@@ -138,14 +141,13 @@ main = do
             let tokens = lexer conts 
             
             putStrLn "TOKENS:\n\n"
-            mapM_ (putStrLn.show) tokens
+            --mapM_ (putStrLn.show) tokens
             
             
             let tree = parser tokens
             
             putStrLn "\n======================\nTREE:\n\n"
-            pp tree
-            --mapM_ (putStrLn.show) tree
+            pp tree -- pretty print the tree
             
             
             putStrLn "\n==============================================\nEND TEST"
@@ -180,7 +182,7 @@ lexer' (x:xs)
     | x == "read"   = (T_INPUT x)     : lexer' xs
     | x == "else"   = (T_ELSE x)      : lexer' xs
     | x == "write"  = (T_WRITE x)     : lexer' xs
-    | x == "print"  = (T_PRINT (head xs))     : lexer' (tail xs)
+    | x == "print"  = (T_PRINT x)     : lexer' xs
     | x == ":="     = (T_ASSIGN x)    : lexer' xs
     | x == "+"      = (T_ADD x)       : lexer' xs
     | x == "-"      = (T_SUB x)       : lexer' xs
@@ -212,7 +214,7 @@ prog ((T_IF _):xs) = (If e p1 p2, end) where
                         (p2, end) = elsepart r2
 prog ((T_WHILE _):xs) = (While e p1, end) where 
                         (e, r1) = expr xs
-                        (p1, end) = prog r1  
+                        (p1, end) = dopart r1  
 prog ((T_INPUT _):(T_ID x):xs) = (Input x, xs)
 prog ((T_ID x):(T_ASSIGN _):xs) = (Id x e, end) where
                             (e, end) = expr xs
@@ -221,20 +223,19 @@ prog ((T_WRITE _):xs) = (Write e, end) where
 prog ((T_PRINT _):xs) = (Print e, end) where
                             (e, end) = expr xs
 prog ((T_BEGIN _):xs) = (Begin s1, endpart end) where
-                            (s1, r1) = stmtlist xs
-                            (s2, end) = stmtlist r1
+                            (s1, end) = stmtlist xs
 
 
 
 stmtlist :: [Token] -> (Stmtlist, [Token])
 stmtlist ((T_IF _):xs) = (S_If e p1 p2 s, end) where
                             (e, r1) = expr xs
-                            (p1, r2) = prog r1
-                            (p2, r3) = prog r2
+                            (p1, r2) = thenpart r1
+                            (p2, r3) = elsepart r2
                             (s, end) = stmtlist $ semipart r3
 stmtlist ((T_WHILE _):xs) = (S_While e p s, end) where
                             (e, r1) = expr xs
-                            (p, r2) = prog r1
+                            (p, r2) = dopart r1
                             (s, end) = stmtlist $ semipart r2
 stmtlist ((T_INPUT _):(T_ID x):xs) = (S_Input x s, end) where
                             (s, end) = stmtlist $ semipart xs
@@ -248,7 +249,7 @@ stmtlist ((T_PRINT _):xs) = (S_Print e, semipart end) where
 stmtlist ((T_BEGIN _):xs) = (S_Begin s1 s2, end) where
                             (s1, r1) = stmtlist xs
                             (s2, end) = stmtlist $ semipart $ endpart r1
-stmtlist x = x                                       
+stmtlist x = (Svoid, x)                            
 
                           
                         
@@ -258,13 +259,19 @@ expr x = (Expr t e, end) where
                         (t, r1) = term x
                         (e, end) = expr' r1
 
+                        
+                        
+                        
+                        
+                        
 expr' ::  [Token] -> (Expr', [Token])                      
 expr' ((T_ADD _):xs) = (Add t e, end) where
                         (t, r1) = term xs
                         (e, end) = expr' r1
 expr' ((T_SUB _):xs) = (Sub t e, end) where
                         (t, r1) = term xs
-                        (e, end) = expr' r1      
+                        (e, end) = expr' r1 
+expr' x = (Evoid, x)                        
 
                         
                         
@@ -275,7 +282,12 @@ term :: [Token] -> (Term, [Token])
 term x = (Term f t, end) where
                         (f, r1) = factor x
                         (t, end) = term' r1
-                        
+       
+
+
+
+
+       
 term' :: [Token] -> (Term', [Token])
 term' ((T_MUL _):xs) = (Mul f t, end) where
                                         (f, r1) = factor xs
@@ -283,8 +295,14 @@ term' ((T_MUL _):xs) = (Mul f t, end) where
 term' ((T_DIV _):xs) = (Div f t, end) where
                                         (f, r1) = factor xs
                                         (t, end) = term' r1
+term' x = (Tvoid, x)                                        
                                         
-                                        
+   
+
+
+
+
+   
 factor :: [Token] -> (Factor, [Token])
 factor ((T_LPAR _):xs) = (Lpar e, rpart end) where
                             (e, end) = expr xs
@@ -292,142 +310,45 @@ factor ((T_ID x):xs) = (F_Id x, xs)
 factor ((T_NUM x):xs) = (Num x, xs)
 factor ((T_SUB _):(T_NUM x):xs) = (Neg x, xs)
 
+
+
+
+
+
+
+
 thenpart :: [Token] -> (Prog, [Token])
-thenpart ((T_THEN _):xs) = (p, end) where
-                                (p, end) = prog xs
+thenpart ((T_THEN _):xs) = (p, end) where (p, end) = prog xs
 
 elsepart :: [Token] -> (Prog, [Token])
-elsepart ((T_ELSE _):xs) = (p, end) where
-                                (p, end) = prog xs
+elsepart ((T_ELSE _):xs) = (p, end) where (p, end) = prog xs
+
+dopart :: [Token] -> (Prog, [Token])
+dopart ((T_DO _):xs) = (p, end) where (p, end) = prog xs
+
+
+
 
 rpart :: [Token] -> [Token]
 rpart ((T_RPAR _):xs) = xs
-rpart x = x
 
 endpart :: [Token] -> [Token]
 endpart ((T_END _):xs) = xs
-endpart x = x
 
 semipart :: [Token] -> [Token]
 semipart ((T_SEMICOLON _):xs) = xs
-semipart x = x
                                         
                                         
                                         
                                         
-                                        
-                                        
-                                        
-{-
--- begin the parsing process
-parser :: [Token] -> [Token]
-parser [] = []
-parser x = prog x
-
--- start the parse program
-prog :: [Token] -> [Token]
-prog [] = []
-prog (x:[]) = [x]
-prog (x:y:xs) =
-    case x of
-        IF _    -> thenpart $ expr (y:xs)
-        WHILE _ -> dopart $ expr (y:xs)
-        INPUT _ -> case y of 
-                    ID _ -> xs
-                    otherwise -> (y:xs)
-        ID _    -> case y of 
-                    ASSIGN _ -> expr xs
-                    otherwise -> (y:xs)
-        WRITE _ -> expr (y:xs)
-        PRINT _ -> expr (y:xs)
-        BEGIN _ -> endpart $ stmtlist (y:xs)
-        otherwise -> x:y:xs
-
--- check for a then statement            
-thenpart :: [Token] -> [Token]
-thenpart [] = []            
-thenpart ((THEN _):xs) = elsepart $ prog xs
-thenpart x = x
-
-elsepart :: [Token] ->[Token]
-elsepart ((ELSE _):xs) = prog xs
-elsepart x = x
-
-dopart :: [Token] ->[Token]
-dopart ((DO _):xs) = prog xs
-dopart x = x
-
-endpart :: [Token] ->[Token]
-endpart [] = []
-endpart ((END _):xs) = xs
-endpart x = x 
-
-stmtlist :: [Token] -> [Token]
-stmtlist x = stmtlist' x
-
-stmtlist' :: [Token] -> [Token]
-stmtlist' (x:[]) = [x]
-stmtlist' (x:y:xs) =
-    case x of
-        IF _    -> stmtlist' $ semipart $ thenpart $ expr (y:xs)
-        WHILE _ -> stmtlist' $ semipart $ dopart $ expr (y:xs)
-        INPUT _ -> case y of 
-                    ID _ -> stmtlist' $ semipart xs
-                    otherwise -> (y:xs)
-        ID _    -> case y of 
-                    ASSIGN _ -> stmtlist' $ semipart $ expr xs
-                    otherwise -> (y:xs)
-        WRITE _ -> semipart $ expr (y:xs)
-        PRINT _ -> stmtlist' $ semipart $ expr (y:xs)
-        BEGIN _ -> stmtlist' $ semipart $ endpart $ stmtlist (y:xs)
-        otherwise -> x:y:xs
-    
-semipart :: [Token] -> [Token]
-semipart ((SEMICOLON _):xs) = xs
-semipart x = x
-
-expr :: [Token] -> [Token]
-expr x = expr' $ term x
-
-expr' :: [Token] -> [Token]
-expr' (x:xs) =
-    case x of 
-        ADD _ -> expr' $ term xs
-        SUB _ -> expr' $ term xs
-        otherwise -> x:xs
-        
-term :: [Token] -> [Token]
-term x = term' $ factor x
-
-term' :: [Token] -> [Token]
-term' (x:xs) =
-    case x of 
-        MUL _ -> term' $ factor xs
-        DIV _ -> term' $ factor xs
-        otherwise -> x:xs
-        
-factor :: [Token] -> [Token]
-factor (x:[]) = [x]
-factor (x:y:xs) =
-    case x of 
-        LPAR _ -> rpart $ expr (y:xs)
-        ID _ -> (y:xs)
-        NUM _ -> (y:xs)
-        SUB _ -> case y of 
-                    NUM _ -> xs
-                    otherwise -> (y:xs)
-        otherwise -> x:y:xs
-    
-rpart :: [Token] -> [Token]
-rpart ((RPAR _):xs) = xs
-rpart x = x    
--}
+-- =================================================
+-- Conversion to stack code
 
 
 
+tostack :: [Token] -> []
 
-                  
-    
+
 -- =================================================
 -- COMMENT HANDLING
 

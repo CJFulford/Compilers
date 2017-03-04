@@ -5,5 +5,5 @@ begin
     x := userIn;
     if x 
     then y := x 
-    else z := x    
+    else z := x; 
 end 
